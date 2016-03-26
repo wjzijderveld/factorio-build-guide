@@ -1,0 +1,5 @@
+<select (change)="selectPart($event)">
+  <option *ngFor="#part of parts">{{ part.name }}</option>
+</select>
+
+<span *ngIf="currentPart">Current: {{ currentPart.name }}</span>
