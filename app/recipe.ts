@@ -1,10 +1,10 @@
 export class Recipe {
 
-  constructor(private _name, private ingredients: Ingredient[], private type: RecipeType = RecipeType.Crafting) {
+  constructor(private _name, private _ingredients: Ingredient[], private type: RecipeType = RecipeType.Crafting, private _time: number) {
   }
 
   static fromResponse(data: any) {
-    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting);
+    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting, data.energy_required || 0.5);
   }
 
   static mapIngredient(ingredient: any) {
@@ -23,13 +23,21 @@ export class Recipe {
   get name() {
     return this._name;
   }
+
+  get ingredients() {
+    return this._ingredients;
+  }
+
+  get time() {
+    return this._time || 0.5;
+  }
 }
 
 export class Ingredient {
 
   private type: IngredientType;
 
-  constructor(private name: string, private amount: number) {
+  constructor(public name: string, public amount: number) {
     this.type = IngredientType.Normal;
   }
 

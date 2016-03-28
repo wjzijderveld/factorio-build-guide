@@ -1,5 +1,21 @@
-<select (change)="selectPart($event)">
-  <option *ngFor="#part of parts">{{ part.name }}</option>
-</select>
+<form class="form form-inline">
+  I want to produce <input [(ngModel)]="amount" type="number" (ngModelChange)="updateBuild()" class="form-control" style="width: 100px;" />
+  <select [(ngModel)]="selectedPart" (ngModelChange)="updateBuild()" class="form-control">
+    <option *ngFor="#part of parts" value="{{ part.name }}">{{ part.name }}</option>
+  </select> per minute.
 
-<span *ngIf="currentPart">Current: {{ currentPart.name }}</span>
+  <div *ngIf="currentPart">
+
+    <strong>{{ currentPart.name }}</strong> takes <strong>{{ currentPart.time }} seconds</strong> per assembler.<br />
+    With <strong>{{ assemblerCount }}</strong> blue assemblers you produce <strong>{{ round(60 / currentPart.time * assemblerCount) }} per minute</strong>.
+
+    <ul class="list-group">
+      <li class="list-group-item" *ngFor="#ingredient of currentPart.ingredients" (click)="changeBuild(ingredient)">
+        <span class="btn btn-link" [ngClass]="{ 'disabled': ! hasRecipe(ingredient) }">
+        {{ ingredient.name }} 
+        </span>
+        <span class="badge">{{ (ingredient.amount * assemblerCount) }} per minute</span>
+      </li>
+    </ul>
+  </div>
+</form>

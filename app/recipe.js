@@ -6,14 +6,15 @@ System.register([], function(exports_1, context_1) {
         setters:[],
         execute: function() {
             Recipe = (function () {
-                function Recipe(_name, ingredients, type) {
+                function Recipe(_name, _ingredients, type, _time) {
                     if (type === void 0) { type = RecipeType.Crafting; }
                     this._name = _name;
-                    this.ingredients = ingredients;
+                    this._ingredients = _ingredients;
                     this.type = type;
+                    this._time = _time;
                 }
                 Recipe.fromResponse = function (data) {
-                    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting);
+                    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting, data.energy_required || 0.5);
                 };
                 Recipe.mapIngredient = function (ingredient) {
                     if (ingredient instanceof Array) {
@@ -27,6 +28,20 @@ System.register([], function(exports_1, context_1) {
                 Object.defineProperty(Recipe.prototype, "name", {
                     get: function () {
                         return this._name;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                Object.defineProperty(Recipe.prototype, "ingredients", {
+                    get: function () {
+                        return this._ingredients;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                Object.defineProperty(Recipe.prototype, "time", {
+                    get: function () {
+                        return this._time || 0.5;
                     },
                     enumerable: true,
                     configurable: true

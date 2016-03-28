@@ -1,10 +1,12 @@
-import {Component,OnInit,Injectable} from 'angular2/core';
+import {Component,OnInit,Injectable, Input} from 'angular2/core';
+import {NgClass} from 'angular2/common';
 import {Http, HTTP_PROVIDERS} from 'angular2/http';
 import {Recipe, Ingredient} from './recipe';
 
 @Component({
   selector: 'factorio-parts',
   templateUrl: 'tpl/factorio-parts.html',
+  directives: [NgClass],
   providers: [HTTP_PROVIDERS]
 })
 
@@ -12,15 +14,48 @@ import {Recipe, Ingredient} from './recipe';
 @Injectable()
 export class FactorioPartsComponent implements OnInit {
 
-  public parts: Recipe[] = [];
-  public currentPart: Recipe;
+  parts: Recipe[] = [];
+  selectedPart: string;
+  amount: number = 1;
+  assemblerCount = 1;
+  @Input() currentPart: Recipe;
 
   constructor(private http: Http) {
 
   }
 
-  selectPart(event) {
-    this.currentPart = this.findPart(event.target.value);
+  updateBuild() {
+    let newPart = this.findPart(this.selectedPart);
+
+    if (! newPart) {
+      return;
+    }
+
+    this.currentPart = newPart;
+    this.assemblerCount = Math.ceil(this.amount / (60 / this.currentPart.time));
+  }
+
+  changeBuild(ingredient: Ingredient) {
+
+    if (!this.findPart(ingredient.name)) {
+      return;
+    }
+
+    this.selectedPart = ingredient.name;
+    this.amount = ingredient.amount * this.assemblerCount;
+    this.updateBuild();
+  }
+
+  hasRecipe(ingredient: Ingredient) {
+    return this.findPart(ingredient.name) !== undefined;
+  }
+
+  ceil(val: number) {
+    return Math.ceil(val);
+  }
+
+  round(val: number) {
+    return val.toFixed(2);
   }
 
   private findPart(part) {
@@ -31,7 +66,7 @@ export class FactorioPartsComponent implements OnInit {
     }
   }
 
-  getRecipes() {
+  private getRecipes() {
     this.http.get('resources/recipes.json')
       .subscribe(res => {
         let recipes = res.json();
@@ -46,10 +81,16 @@ export class FactorioPartsComponent implements OnInit {
         });
 
         this.currentPart = this.parts[0];
+        this.selectedPart = this.currentPart.name;
       });
   }
 
   ngOnInit() {
     this.getRecipes();
+  }
+
+  ngOnChanges() {
+    console.log('OnChanges');
+    console.log(arguments);
   }
 }
