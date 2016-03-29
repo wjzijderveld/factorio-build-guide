@@ -1,4 +1,4 @@
-System.register(['angular2/core', './factorio-parts'], function(exports_1, context_1) {
+System.register(['angular2/core', 'angular2/router', './factorio-parts'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,12 +10,15 @@ System.register(['angular2/core', './factorio-parts'], function(exports_1, conte
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, factorio_parts_1;
+    var core_1, router_1, factorio_parts_1;
     var AppComponent;
     return {
         setters:[
             function (core_1_1) {
                 core_1 = core_1_1;
+            },
+            function (router_1_1) {
+                router_1 = router_1_1;
             },
             function (factorio_parts_1_1) {
                 factorio_parts_1 = factorio_parts_1_1;
@@ -23,14 +26,17 @@ System.register(['angular2/core', './factorio-parts'], function(exports_1, conte
         execute: function() {
             AppComponent = (function () {
                 function AppComponent() {
-                    this.recipes = [];
                 }
                 AppComponent = __decorate([
                     core_1.Component({
                         selector: 'factorio-guide',
-                        directives: [factorio_parts_1.FactorioPartsComponent],
+                        directives: [factorio_parts_1.FactorioPartsComponent, router_1.ROUTER_DIRECTIVES],
                         templateUrl: 'tpl/main.html'
-                    }), 
+                    }),
+                    router_1.RouteConfig([
+                        { path: '/', redirectTo: ['FactorioParts', { part: 'low-density-structure', amount: 100 }] },
+                        { path: '/:part/:amount', name: 'FactorioParts', component: factorio_parts_1.FactorioPartsComponent, useAsDefault: true }
+                    ]), 
                     __metadata('design:paramtypes', [])
                 ], AppComponent);
                 return AppComponent;

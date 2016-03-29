@@ -14,7 +14,7 @@
         <span class="btn btn-link" [ngClass]="{ 'disabled': ! hasRecipe(ingredient) }">
         {{ ingredient.name }} 
         </span>
-        <span class="badge">{{ (ingredient.amount * assemblerCount) }} per minute</span>
+        <span class="badge">{{ (ingredient.amount * assemblerCount * (round(60 / currentPart.time))) }} per minute</span>
       </li>
     </ul>
   </div>

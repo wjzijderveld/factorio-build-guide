@@ -1,4 +1,4 @@
-System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'], function(exports_1, context_1) {
+System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/router', './recipe'], function(exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
     var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
@@ -10,7 +10,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'
     var __metadata = (this && this.__metadata) || function (k, v) {
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
-    var core_1, common_1, http_1, recipe_1;
+    var core_1, common_1, http_1, router_1, recipe_1;
     var FactorioPartsComponent;
     return {
         setters:[
@@ -23,13 +23,18 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'
             function (http_1_1) {
                 http_1 = http_1_1;
             },
+            function (router_1_1) {
+                router_1 = router_1_1;
+            },
             function (recipe_1_1) {
                 recipe_1 = recipe_1_1;
             }],
         execute: function() {
             FactorioPartsComponent = (function () {
-                function FactorioPartsComponent(http) {
+                function FactorioPartsComponent(http, _router, _routeParams) {
                     this.http = http;
+                    this._router = _router;
+                    this._routeParams = _routeParams;
                     this.parts = [];
                     this.amount = 1;
                     this.assemblerCount = 1;
@@ -46,9 +51,15 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'
                     if (!this.findPart(ingredient.name)) {
                         return;
                     }
+                    this._router.navigate(['FactorioParts', {
+                            part: ingredient.name,
+                            amount: ingredient.amount * this.assemblerCount * this.ceil(60 / this.currentPart.time)
+                        }]);
+                    /*
                     this.selectedPart = ingredient.name;
                     this.amount = ingredient.amount * this.assemblerCount;
                     this.updateBuild();
+                    */
                 };
                 FactorioPartsComponent.prototype.hasRecipe = function (ingredient) {
                     return this.findPart(ingredient.name) !== undefined;
@@ -79,8 +90,15 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'
                         _this.parts.sort(function (a, b) {
                             return a.name < b.name ? -1 : 1;
                         });
-                        _this.currentPart = _this.parts[0];
-                        _this.selectedPart = _this.currentPart.name;
+                        if (_this._routeParams.params['part'] && _this._routeParams.params['amount']) {
+                            _this.selectedPart = _this._routeParams.params['part'];
+                            _this.amount = parseInt(_this._routeParams.params['amount'], 10);
+                            _this.updateBuild();
+                        }
+                        else {
+                            _this.currentPart = _this.parts[0];
+                            _this.selectedPart = _this.currentPart.name;
+                        }
                     });
                 };
                 FactorioPartsComponent.prototype.ngOnInit = function () {
@@ -102,7 +120,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', './recipe'
                         providers: [http_1.HTTP_PROVIDERS]
                     }),
                     core_1.Injectable(), 
-                    __metadata('design:paramtypes', [http_1.Http])
+                    __metadata('design:paramtypes', [http_1.Http, router_1.Router, router_1.RouteParams])
                 ], FactorioPartsComponent);
                 return FactorioPartsComponent;
             }());

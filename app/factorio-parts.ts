@@ -1,6 +1,7 @@
 import {Component,OnInit,Injectable, Input} from 'angular2/core';
 import {NgClass} from 'angular2/common';
 import {Http, HTTP_PROVIDERS} from 'angular2/http';
+import {Router,RouteParams} from 'angular2/router';
 import {Recipe, Ingredient} from './recipe';
 
 @Component({
@@ -9,7 +10,6 @@ import {Recipe, Ingredient} from './recipe';
   directives: [NgClass],
   providers: [HTTP_PROVIDERS]
 })
-
 
 @Injectable()
 export class FactorioPartsComponent implements OnInit {
@@ -20,8 +20,7 @@ export class FactorioPartsComponent implements OnInit {
   assemblerCount = 1;
   @Input() currentPart: Recipe;
 
-  constructor(private http: Http) {
-
+  constructor(private http: Http, private _router: Router, private _routeParams: RouteParams) {
   }
 
   updateBuild() {
@@ -40,17 +39,24 @@ export class FactorioPartsComponent implements OnInit {
     if (!this.findPart(ingredient.name)) {
       return;
     }
+    
+    this._router.navigate(['FactorioParts', {
+      part: ingredient.name,
+      amount: ingredient.amount * this.assemblerCount * this.ceil(60 / this.currentPart.time)
+    }]);
 
+    /*
     this.selectedPart = ingredient.name;
     this.amount = ingredient.amount * this.assemblerCount;
     this.updateBuild();
+    */
   }
 
   hasRecipe(ingredient: Ingredient) {
     return this.findPart(ingredient.name) !== undefined;
   }
 
-  ceil(val: number) {
+  ceil(val: number): number {
     return Math.ceil(val);
   }
 
@@ -80,8 +86,14 @@ export class FactorioPartsComponent implements OnInit {
           return a.name < b.name ? -1 : 1;
         });
 
-        this.currentPart = this.parts[0];
-        this.selectedPart = this.currentPart.name;
+        if (this._routeParams.params['part'] && this._routeParams.params['amount']) {
+          this.selectedPart = this._routeParams.params['part'];
+          this.amount = parseInt(this._routeParams.params['amount'], 10);
+          this.updateBuild();
+        } else {
+          this.currentPart = this.parts[0];
+          this.selectedPart = this.currentPart.name;
+        }
       });
   }
 
