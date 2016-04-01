@@ -20,3 +20,4 @@ cp $DIR/package.json $OUTPUT/
 
 cd $OUTPUT/
 npm prune --production
+rm $OUTPUT/package.json
