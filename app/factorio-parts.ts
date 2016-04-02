@@ -18,6 +18,7 @@ export class FactorioPartsComponent implements OnInit {
   selectedPart: string;
   amount: number = 1;
   assemblerCount = 1;
+  assemblingSpeed = 0.75;
   @Input() currentPart: Recipe;
 
   constructor(private http: Http, private _router: Router, private _routeParams: RouteParams) {
@@ -31,7 +32,7 @@ export class FactorioPartsComponent implements OnInit {
     }
 
     this.currentPart = newPart;
-    this.assemblerCount = Math.ceil(this.amount / (60 / this.currentPart.time));
+    this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentPart.time / this.assemblingSpeed)));
   }
 
   changeBuild(ingredient: Ingredient) {

@@ -2,7 +2,13 @@
   I want to produce <input [(ngModel)]="amount" type="number" (ngModelChange)="updateBuild()" class="form-control" style="width: 100px;" />
   <select [(ngModel)]="selectedPart" (ngModelChange)="updateBuild()" class="form-control">
     <option *ngFor="#part of parts" value="{{ part.name }}">{{ part.name }}</option>
-  </select> per minute.
+  </select>
+  with
+  <select [(ngModel)]="assemblingSpeed" (ngModelChange)="updateBuild()" class="form-control">
+    <option value="0.75" selected="selected">Blue</option>
+    <option value="1.25">Yellow</option>
+  </select>
+  assemblers per minute.
 
   <div *ngIf="currentPart">
 
@@ -14,7 +20,7 @@
         <span class="btn btn-link" [ngClass]="{ 'disabled': ! hasRecipe(ingredient) }">
         {{ ingredient.name }} 
         </span>
-        <span class="badge">{{ (ingredient.amount * assemblerCount * (round(60 / currentPart.time))) }} per minute</span>
+        <span class="badge">{{ round(ingredient.amount * assemblerCount * (round(60 / currentPart.time))) }} per minute</span>
       </li>
     </ul>
   </div>

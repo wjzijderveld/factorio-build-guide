@@ -38,6 +38,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                     this.parts = [];
                     this.amount = 1;
                     this.assemblerCount = 1;
+                    this.assemblingSpeed = 0.75;
                 }
                 FactorioPartsComponent.prototype.updateBuild = function () {
                     var newPart = this.findPart(this.selectedPart);
@@ -45,7 +46,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                         return;
                     }
                     this.currentPart = newPart;
-                    this.assemblerCount = Math.ceil(this.amount / (60 / this.currentPart.time));
+                    this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentPart.time / this.assemblingSpeed)));
                 };
                 FactorioPartsComponent.prototype.changeBuild = function (ingredient) {
                     if (!this.findPart(ingredient.name)) {
