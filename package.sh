@@ -21,3 +21,6 @@ cp $DIR/package.json $OUTPUT/
 cd $OUTPUT/
 npm prune --production
 rm $OUTPUT/package.json
+
+cd ../
+tar -czf factorio-build-guide.tar.gz --directory=artifact . --exclude-vcs --ignore-failed-read

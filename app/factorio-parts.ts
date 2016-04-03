@@ -2,7 +2,7 @@ import {Component,OnInit,Injectable, Input} from 'angular2/core';
 import {NgClass} from 'angular2/common';
 import {Http, HTTP_PROVIDERS} from 'angular2/http';
 import {Router,RouteParams} from 'angular2/router';
-import {Recipe, Ingredient} from './recipe';
+import {Recipe, Part, Ingredient} from './recipe';
 
 @Component({
   selector: 'factorio-parts',
@@ -14,14 +14,17 @@ import {Recipe, Ingredient} from './recipe';
 @Injectable()
 export class FactorioPartsComponent implements OnInit {
 
-  parts: Recipe[] = [];
+  recipes: Recipe[] = [];
+  parts: Part[] = [];
   selectedPart: string;
   amount: number = 1;
   assemblerCount = 1;
   assemblingSpeed = 0.75;
   @Input() currentPart: Recipe;
+  partType: string;
 
   constructor(private http: Http, private _router: Router, private _routeParams: RouteParams) {
+    this.partType = _routeParams['type'];
   }
 
   updateBuild() {
@@ -30,8 +33,9 @@ export class FactorioPartsComponent implements OnInit {
     if (! newPart) {
       return;
     }
+    
 
-    this.currentPart = newPart;
+    this.currentPart = newPart[0];
     this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentPart.time / this.assemblingSpeed)));
   }
 
@@ -57,6 +61,10 @@ export class FactorioPartsComponent implements OnInit {
     return this.findPart(ingredient.name) !== undefined;
   }
 
+  getRecipes(part: string): Recipe[] {
+    return this.findPart(part);
+  }
+
   ceil(val: number): number {
     return Math.ceil(val);
   }
@@ -65,41 +73,73 @@ export class FactorioPartsComponent implements OnInit {
     return val.toFixed(2);
   }
 
-  private findPart(part) {
-    for (var key in this.parts) {
-      if (this.parts[key].name == part) {
-        return this.parts[key];
+  private populateParts() {
+    this.parts = [];
+    for (let recipe of this.recipes) {
+      for (let result of recipe.results) {
+        console.log(result.type);
+        if (! this.hasPart(result.name)) {
+          this.parts.push(result);
+        }
       }
     }
   }
 
-  private getRecipes() {
+  private hasPart(name: string): boolean {
+    for (let part of this.parts) {
+      if (part.name == name) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private findPart(part): Recipe[] {
+    let options = [];
+    for (let recipe of this.recipes) {
+      if (recipe.name == part) {
+        options.push(recipe);
+      }
+
+      for (let res of recipe.results) {
+        if (res.name == part) {
+          options.push(recipe);
+        }
+      }
+    }
+    return options;
+  }
+
+  private loadRecipes() {
     this.http.get('resources/recipes.json')
       .subscribe(res => {
         let recipes = res.json();
         for (var key in recipes) {
           let recipe = recipes[key];
 
-          this.parts.push(Recipe.fromResponse(recipe))
+          this.recipes.push(Recipe.fromResponse(recipe))
         };
 
-        this.parts.sort((a, b) => {
+        this.recipes.sort((a, b) => {
           return a.name < b.name ? -1 : 1;
         });
+
+        this.populateParts();
 
         if (this._routeParams.params['part'] && this._routeParams.params['amount']) {
           this.selectedPart = this._routeParams.params['part'];
           this.amount = parseInt(this._routeParams.params['amount'], 10);
           this.updateBuild();
         } else {
-          this.currentPart = this.parts[0];
+          this.currentPart = this.recipes[0];
           this.selectedPart = this.currentPart.name;
         }
       });
   }
 
   ngOnInit() {
-    this.getRecipes();
+    this.loadRecipes();
   }
 
   ngOnChanges() {

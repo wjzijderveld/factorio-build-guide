@@ -6,15 +6,16 @@ System.register([], function(exports_1, context_1) {
         setters:[],
         execute: function() {
             Recipe = (function () {
-                function Recipe(_name, _ingredients, type, _time) {
+                function Recipe(_name, _ingredients, type, _time, _results) {
                     if (type === void 0) { type = RecipeType.Crafting; }
                     this._name = _name;
                     this._ingredients = _ingredients;
                     this.type = type;
                     this._time = _time;
+                    this._results = _results;
                 }
                 Recipe.fromResponse = function (data) {
-                    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting, data.energy_required || 0.5);
+                    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting, data.energy_required || 0.5, Recipe.getResultsFromResponse(data));
                 };
                 Recipe.mapIngredient = function (ingredient) {
                     if (ingredient instanceof Array) {
@@ -46,6 +47,27 @@ System.register([], function(exports_1, context_1) {
                     enumerable: true,
                     configurable: true
                 });
+                Object.defineProperty(Recipe.prototype, "results", {
+                    get: function () {
+                        return this._results;
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                Recipe.getResultsFromResponse = function (data) {
+                    var results = [];
+                    if (data.results !== undefined) {
+                        results = data.results;
+                    }
+                    if (data.result !== undefined) {
+                        results.push({
+                            name: data.result,
+                            type: 'item',
+                            amount: data.result_count || 1
+                        });
+                    }
+                    return results;
+                };
                 return Recipe;
             }());
             exports_1("Recipe", Recipe);

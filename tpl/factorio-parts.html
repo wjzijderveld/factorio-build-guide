@@ -1,7 +1,7 @@
 <form class="form form-inline">
   I want to produce <input [(ngModel)]="amount" type="number" (ngModelChange)="updateBuild()" class="form-control" style="width: 100px;" />
   <select [(ngModel)]="selectedPart" (ngModelChange)="updateBuild()" class="form-control">
-    <option *ngFor="#part of parts" value="{{ part.name }}">{{ part.name }}</option>
+    <option *ngFor="#part of parts" value="{{ part.name }}">{{ part.name }} ({{ part.type }})</option>
   </select>
   with
   <select [(ngModel)]="assemblingSpeed" (ngModelChange)="updateBuild()" class="form-control">
@@ -15,10 +15,10 @@
     <strong>{{ currentPart.name }}</strong> takes <strong>{{ currentPart.time }} seconds</strong> per assembler.<br />
     With <strong>{{ assemblerCount }}</strong> blue assemblers you produce <strong>{{ round(60 / currentPart.time * assemblerCount) }} per minute</strong>.
 
-    <ul class="list-group">
-      <li class="list-group-item" *ngFor="#ingredient of currentPart.ingredients" (click)="changeBuild(ingredient)">
+    <ul class="list-group" *ngFor="#recipe of getRecipes(selectedPart)">
+      <li class="list-group-item" *ngFor="#ingredient of recipe.ingredients" (click)="changeBuild(ingredient)">
         <span class="btn btn-link" [ngClass]="{ 'disabled': ! hasRecipe(ingredient) }">
-        {{ ingredient.name }} 
+        {{ recipe.name }} 
         </span>
         <span class="badge">{{ round(ingredient.amount * assemblerCount * (round(60 / currentPart.time))) }} per minute</span>
       </li>

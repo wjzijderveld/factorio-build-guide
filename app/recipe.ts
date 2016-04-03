@@ -1,10 +1,22 @@
 export class Recipe {
 
-  constructor(private _name, private _ingredients: Ingredient[], private type: RecipeType = RecipeType.Crafting, private _time: number) {
+  constructor(
+      private _name,
+      private _ingredients: Ingredient[],
+      private type: RecipeType = RecipeType.Crafting,
+      private _time: number,
+      private _results: RecipeResult[]
+    ) {
   }
 
   static fromResponse(data: any) {
-    return new Recipe(data.name, data.ingredients.map(Recipe.mapIngredient), RecipeType.Crafting, data.energy_required || 0.5);
+    return new Recipe(
+        data.name,
+        data.ingredients.map(Recipe.mapIngredient),
+        RecipeType.Crafting,
+        data.energy_required || 0.5,
+        Recipe.getResultsFromResponse(data)
+      );
   }
 
   static mapIngredient(ingredient: any) {
@@ -31,6 +43,39 @@ export class Recipe {
   get time() {
     return this._time || 0.5;
   }
+
+  get results() {
+    return this._results;
+  }
+
+  private static getResultsFromResponse(data: any): any[] {
+    let results = [];
+
+    if (data.results !== undefined) {
+      results = data.results;
+    }
+
+    if (data.result !== undefined) {
+      results.push({
+        name: data.result,
+        type: 'item',
+        amount: data.result_count || 1
+      });
+    }
+
+    return results;
+  }
+}
+
+export interface RecipeResult {
+  name: string;
+  type: string;
+  amount: number;
+}
+
+export interface Part {
+  name: string;
+  type: string;
 }
 
 export class Ingredient {

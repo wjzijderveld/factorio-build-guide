@@ -35,17 +35,19 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                     this.http = http;
                     this._router = _router;
                     this._routeParams = _routeParams;
+                    this.recipes = [];
                     this.parts = [];
                     this.amount = 1;
                     this.assemblerCount = 1;
                     this.assemblingSpeed = 0.75;
+                    this.partType = _routeParams['type'];
                 }
                 FactorioPartsComponent.prototype.updateBuild = function () {
                     var newPart = this.findPart(this.selectedPart);
                     if (!newPart) {
                         return;
                     }
-                    this.currentPart = newPart;
+                    this.currentPart = newPart[0];
                     this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentPart.time / this.assemblingSpeed)));
                 };
                 FactorioPartsComponent.prototype.changeBuild = function (ingredient) {
@@ -65,45 +67,80 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                 FactorioPartsComponent.prototype.hasRecipe = function (ingredient) {
                     return this.findPart(ingredient.name) !== undefined;
                 };
+                FactorioPartsComponent.prototype.getRecipes = function (part) {
+                    return this.findPart(part);
+                };
                 FactorioPartsComponent.prototype.ceil = function (val) {
                     return Math.ceil(val);
                 };
                 FactorioPartsComponent.prototype.round = function (val) {
                     return val.toFixed(2);
                 };
-                FactorioPartsComponent.prototype.findPart = function (part) {
-                    for (var key in this.parts) {
-                        if (this.parts[key].name == part) {
-                            return this.parts[key];
+                FactorioPartsComponent.prototype.populateParts = function () {
+                    this.parts = [];
+                    for (var _i = 0, _a = this.recipes; _i < _a.length; _i++) {
+                        var recipe = _a[_i];
+                        for (var _b = 0, _c = recipe.results; _b < _c.length; _b++) {
+                            var result = _c[_b];
+                            console.log(result.type);
+                            if (!this.hasPart(result.name)) {
+                                this.parts.push(result);
+                            }
                         }
                     }
                 };
-                FactorioPartsComponent.prototype.getRecipes = function () {
+                FactorioPartsComponent.prototype.hasPart = function (name) {
+                    for (var _i = 0, _a = this.parts; _i < _a.length; _i++) {
+                        var part = _a[_i];
+                        if (part.name == name) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                FactorioPartsComponent.prototype.findPart = function (part) {
+                    var options = [];
+                    for (var _i = 0, _a = this.recipes; _i < _a.length; _i++) {
+                        var recipe = _a[_i];
+                        if (recipe.name == part) {
+                            options.push(recipe);
+                        }
+                        for (var _b = 0, _c = recipe.results; _b < _c.length; _b++) {
+                            var res = _c[_b];
+                            if (res.name == part) {
+                                options.push(recipe);
+                            }
+                        }
+                    }
+                    return options;
+                };
+                FactorioPartsComponent.prototype.loadRecipes = function () {
                     var _this = this;
                     this.http.get('resources/recipes.json')
                         .subscribe(function (res) {
                         var recipes = res.json();
                         for (var key in recipes) {
                             var recipe = recipes[key];
-                            _this.parts.push(recipe_1.Recipe.fromResponse(recipe));
+                            _this.recipes.push(recipe_1.Recipe.fromResponse(recipe));
                         }
                         ;
-                        _this.parts.sort(function (a, b) {
+                        _this.recipes.sort(function (a, b) {
                             return a.name < b.name ? -1 : 1;
                         });
+                        _this.populateParts();
                         if (_this._routeParams.params['part'] && _this._routeParams.params['amount']) {
                             _this.selectedPart = _this._routeParams.params['part'];
                             _this.amount = parseInt(_this._routeParams.params['amount'], 10);
                             _this.updateBuild();
                         }
                         else {
-                            _this.currentPart = _this.parts[0];
+                            _this.currentPart = _this.recipes[0];
                             _this.selectedPart = _this.currentPart.name;
                         }
                     });
                 };
                 FactorioPartsComponent.prototype.ngOnInit = function () {
-                    this.getRecipes();
+                    this.loadRecipes();
                 };
                 FactorioPartsComponent.prototype.ngOnChanges = function () {
                     console.log('OnChanges');

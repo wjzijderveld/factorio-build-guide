@@ -34,8 +34,8 @@ System.register(['angular2/core', 'angular2/router', './factorio-parts'], functi
                         templateUrl: 'tpl/main.html'
                     }),
                     router_1.RouteConfig([
-                        { path: '/', redirectTo: ['FactorioParts', { part: 'low-density-structure', amount: 100 }] },
-                        { path: '/:part/:amount', name: 'FactorioParts', component: factorio_parts_1.FactorioPartsComponent, useAsDefault: true }
+                        { path: '/', redirectTo: ['FactorioParts', { part: 'low-density-structure', amount: 100, type: 'item' }] },
+                        { path: '/:type/:part/:amount', name: 'FactorioParts', component: factorio_parts_1.FactorioPartsComponent, useAsDefault: true }
                     ]), 
                     __metadata('design:paramtypes', [])
                 ], AppComponent);
