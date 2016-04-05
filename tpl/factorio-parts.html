@@ -1,15 +1,77 @@
-<form class="form form-inline">
-  I want to produce <input [(ngModel)]="amount" type="number" (ngModelChange)="updateBuild()" class="form-control" style="width: 100px;" />
-  <select [(ngModel)]="selectedPart" (ngModelChange)="updateBuild()" class="form-control">
-    <option *ngFor="#part of parts" value="{{ part.name }}">{{ part.name }} ({{ part.type }})</option>
-  </select>
-  with
-  <select [(ngModel)]="assemblingSpeed" (ngModelChange)="updateBuild()" class="form-control">
-    <option value="0.75" selected="selected">Blue</option>
-    <option value="1.25">Yellow</option>
-  </select>
-  assemblers per minute.
+<div class="form form-inline">
 
+  <ul class="nav nav-pills">
+    <li [ngClass]="{ active: recipeType == 'crafting' }"><a [routerLink]="['FactorioParts', {'type': 'crafting', 'amount': amount, 'result': currentResultName}]">Crafting</a></li>
+    <li [ngClass]="{ active: recipeType == 'chemistry' }"><a [routerLink]="['FactorioParts', {'type': 'chemistry', 'amount': amount, 'result': currentResultName}]">Chemistry</a></li>
+  </ul>
+
+  <div template="ngIf:recipeType == 'crafting'">
+    I want to produce
+    <input [(ngModel)]="amount" type="number" (ngModelChange)="recalculate()" class="form-control" style="width: 100px;" />
+    <select [(ngModel)]="currentResultName" (ngModelChange)="changeResult($event)" class="form-control">
+      <option template="ngFor:#result of results" value="{{ result.name }}">{{ result.name }} ({{ result.type }})</option>
+    </select>
+    with
+    <select [(ngModel)]="assemblingSpeed" (ngModelChange)="recalculate()" class="form-control">
+      <option value="0.75" selected="selected">Blue</option>
+      <option value="1.25">Yellow</option>
+    </select>
+    assemblers per minute.
+
+    <div class="row" template="ngIf: possibleRecipes.length == 0">
+      <div class="alert alert-warning">No {{ recipeType }} recipes that result in {{ currentResultName }}</div>
+    </div>
+    <div class="row" template="ngIf: possibleRecipes.length > 0">
+      <div template="ngIf: !possibleRecipes" class="alert alert-warning">No {{ recipeType }} recipes that result in {{ currentResultName }}</div>
+      <div class="col-xs-2">
+        <ul class="nav nav-pills nav-stacked">
+          <li role="presentation" template="ngFor:#recipe of possibleRecipes" (click)="selectRecipe(recipe)" [class.active]="recipe.name == currentRecipe.name"><a href="javascript:void;">{{ recipe.name }}</a></li>
+        </ul>
+      </div>
+      <div class="col-xs-10 tab-content">
+        <div template="ngFor:#recipe of possibleRecipes" class="tab-pane" [class.active]="recipe.name == currentRecipe.name">
+          <div class="row">
+            With <strong>{{ assemblerCount }}</strong> assemblers you produce per minute:
+            <ul class="list-group">
+              <li class="list-group-item" template="ngFor:#result of currentRecipe.results">
+                {{ result.amount }} {{ result.name }}
+              </li>
+            </ul>
+          </div>
+          <div class="row">
+            and you will need every <strong>{{ currentRecipe.time }} seconds</strong>:
+
+            <ul class="nav nav-pills nav-stacked">
+              <li role="presentation" template="ngFor:#ingredient of currentRecipe.ingredients">
+                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'crafting')" [routerLink]="['FactorioParts', { 'type': 'crafting', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Crafting</span></a>
+                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'chemistry')" [routerLink]="['FactorioParts', { 'type': 'chemistry', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Chemistry</span></a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div template="ngIf: recipeType == 'chemistry'">
+    I want to produce
+    <input [(ngModel)]="amount" type="number" (ngModelChange)="recalculate()" class="form-control" style="width: 100px;" />
+    <select [(ngModel)]="currentResultName" (ngModelChange)="changeResult($event)" class="form-control">
+      <option template="ngFor: #result of results" value="{{ result.name }}">{{ result.name }} ({{ result.type }})</option>
+    </select>
+    with
+    <select [(ngModel)]="oilProcessingType" (ngModelChange)="recalculate()" class="form-control">
+      <option value="basic">Basic</option>
+      <option value="advanced">Advanced</option>
+    </select>
+    oil processing per minute.
+
+
+  </div>
+ 
+  
+
+  <!--
   <div *ngIf="currentPart">
 
     <strong>{{ currentPart.name }}</strong> takes <strong>{{ currentPart.time }} seconds</strong> per assembler.<br />
@@ -18,10 +80,11 @@
     <ul class="list-group" *ngFor="#recipe of getRecipes(selectedPart)">
       <li class="list-group-item" *ngFor="#ingredient of recipe.ingredients" (click)="changeBuild(ingredient)">
         <span class="btn btn-link" [ngClass]="{ 'disabled': ! hasRecipe(ingredient) }">
-        {{ recipe.name }} 
+        {{ recipe.name }}
         </span>
         <span class="badge">{{ round(ingredient.amount * assemblerCount * (round(60 / currentPart.time))) }} per minute</span>
       </li>
     </ul>
   </div>
-</form>
+  -->
+</div>

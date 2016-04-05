@@ -10,8 +10,8 @@ import {FactorioPartsComponent} from './factorio-parts'
 })
 
 @RouteConfig([
-  { path: '/', redirectTo: ['FactorioParts', { part: 'low-density-structure', amount: 100, type: 'item' }] },
-  { path: '/:type/:part/:amount', name: 'FactorioParts', component: FactorioPartsComponent, useAsDefault: true }
+//  { path: '/', redirectTo: ['FactorioParts', { result: 'rocket-fuel', amount: 100, type: 'item' }] },
+  { path: '/:type/:result/:amount', name: 'FactorioParts', component: FactorioPartsComponent }
 ])
 
 export class AppComponent {

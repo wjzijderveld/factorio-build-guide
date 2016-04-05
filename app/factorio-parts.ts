@@ -1,13 +1,32 @@
-import {Component,OnInit,Injectable, Input} from 'angular2/core';
+import {Component,OnInit, OnChanges, Injectable, Input} from 'angular2/core';
 import {NgClass} from 'angular2/common';
 import {Http, HTTP_PROVIDERS} from 'angular2/http';
-import {Router,RouteParams} from 'angular2/router';
-import {Recipe, Part, Ingredient} from './recipe';
+import {Router, RouteParams, RouterLink, ROUTER_DIRECTIVES} from 'angular2/router';
+import {Recipe, Ingredient, Type, RecipeType, RecipeResult, OilProcessingType} from './recipe';
+import {recipeFactory} from './recipe';
+
+interface OilOutput {
+  'petroleum-gas': number;
+  'light-oil': number;
+  'heavy-oil': number;
+}
+
+let BasicOilOutput = {
+  'petroleum-gas': 4 * 12,
+  'light-oil': 3 * 12,
+  'heavy-oil': 3 * 12
+}
+
+let AdvancedOilOutput = {
+  'petroleum-gas': 5.5 * 12,
+  'light-oil': 4.5 * 12,
+  'heavy-oil': 1 * 12
+}
 
 @Component({
   selector: 'factorio-parts',
   templateUrl: 'tpl/factorio-parts.html',
-  directives: [NgClass],
+  directives: [NgClass, RouterLink],
   providers: [HTTP_PROVIDERS]
 })
 
@@ -15,46 +34,121 @@ import {Recipe, Part, Ingredient} from './recipe';
 export class FactorioPartsComponent implements OnInit {
 
   recipes: Recipe[] = [];
-  parts: Part[] = [];
+  results: RecipeResult[] = [];
+
   selectedPart: string;
   amount: number = 1;
+
   assemblerCount = 1;
   assemblingSpeed = 0.75;
-  @Input() currentPart: Recipe;
-  partType: string;
+
+  refineries = 1;
+  chemistryPlants = 1;
+  oilProcessingType: OilProcessingType = 'basic';
+  oilOutput: OilOutput = BasicOilOutput;
+
+  currentResult: RecipeResult;
+  currentRecipe: Recipe;
+  possibleRecipes: Recipe[] = [];
+  @Input() currentResultName: string;
+  @Input() currentRecipeName: string;
+  recipeType: RecipeType;
 
   constructor(private http: Http, private _router: Router, private _routeParams: RouteParams) {
-    this.partType = _routeParams['type'];
   }
 
-  updateBuild() {
-    let newPart = this.findPart(this.selectedPart);
+  recalculate() {
+    this.possibleRecipes = this.getRecipesForResult(this.currentResult.name, this.recipeType);
 
-    if (! newPart) {
-      return;
+    if (this.possibleRecipes.length > 0) {
+      if (this.recipeType == 'chemistry') {
+        this.recalculateChemistry();
+      } else {
+        this.currentRecipe = this.possibleRecipes[0];
+        this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentRecipe.time / this.assemblingSpeed)))
+      }
     }
-    
-
-    this.currentPart = newPart[0];
-    this.assemblerCount = Math.ceil(this.amount / (60 / (this.currentPart.time / this.assemblingSpeed)));
   }
 
-  changeBuild(ingredient: Ingredient) {
+  private recalculateChemistry() {
+    this.oilOutput = this.oilProcessingType == 'basic' ? BasicOilOutput : AdvancedOilOutput;
 
-    if (!this.findPart(ingredient.name)) {
-      return;
+    this.refineries = 1;
+   
+    var output = 0;
+    var input: OilOutput = {
+      'petroleum-gas': 0,
+      'light-oil': 0,
+      'heavy-oil': 0
+    };
+
+    do {
+
+      for (let recipe of this.possibleRecipes) {
+        var max = 0;
+        for (let ingredient of recipe.ingredients) {
+          input[ingredient.name] = ingredient.amount * 20;
+        }
+
+        output = output + (recipe.results.filter(r => r.name == this.currentResultName).map(r => r.amount).reduce((p,c) => p+c) * 20);
+      }
+
+      console.log(this.possibleRecipes, input, output);
+
+    } while (false);
+  }
+
+  changeResult(resultName: string): void {
+    this.currentResult = this.getResult(resultName);
+
+    this.recalculate();
+  }
+
+  selectRecipe(recipe: Recipe): void {
+    this.currentRecipe = recipe;
+    this.currentRecipeName = recipe.name;
+  }
+
+  ingredientHasRecipeOfType(ingredient: Ingredient, type: RecipeType): boolean {
+    return this.getRecipesForResult(ingredient.name).filter((r) => r.category == type).length > 0;
+  }
+
+  private initFromRoute(): void {
+    this.amount = parseInt(this._routeParams.params['amount'] || '1', 10);
+    this.recipeType = <RecipeType> this._routeParams.params['type'] || 'crafting';
+    this.currentResultName = this._routeParams.params['result'] || 'electronic-circuit';
+    this.currentResult = this.getResult(this.currentResultName);
+
+    this.recalculate();
+  }
+
+  private getResult(resultName: string): RecipeResult {
+    let result = this.results.filter((result => {
+      return result.name == resultName;
+    }));
+
+    if (result.length == 0) {
+      console.error(resultName);
+      throw new Error("Could not find recipe for '" + resultName  +"'");
     }
-    
-    this._router.navigate(['FactorioParts', {
-      part: ingredient.name,
-      amount: ingredient.amount * this.assemblerCount * this.ceil(60 / this.currentPart.time)
-    }]);
 
-    /*
-    this.selectedPart = ingredient.name;
-    this.amount = ingredient.amount * this.assemblerCount;
-    this.updateBuild();
-    */
+    return result[0];
+  }
+
+  private getRecipesForResult(resultName: string, category?: RecipeType) {
+    return this.recipes.filter((recipe: Recipe) => {
+      if (category && recipe.category !== category) {
+        return false;
+      }
+
+      for (let result of recipe.results) {
+        if (result.name == resultName) {
+          return true;
+        }
+      }
+
+      return false;
+    });
   }
 
   hasRecipe(ingredient: Ingredient) {
@@ -74,20 +168,19 @@ export class FactorioPartsComponent implements OnInit {
   }
 
   private populateParts() {
-    this.parts = [];
+    this.results = [];
     for (let recipe of this.recipes) {
       for (let result of recipe.results) {
-        console.log(result.type);
         if (! this.hasPart(result.name)) {
-          this.parts.push(result);
+          this.results.push(result);
         }
       }
     }
   }
 
   private hasPart(name: string): boolean {
-    for (let part of this.parts) {
-      if (part.name == name) {
+    for (let result of this.results) {
+      if (result.name == name) {
         return true;
       }
     }
@@ -118,7 +211,7 @@ export class FactorioPartsComponent implements OnInit {
         for (var key in recipes) {
           let recipe = recipes[key];
 
-          this.recipes.push(Recipe.fromResponse(recipe))
+          this.recipes.push(recipeFactory(recipe))
         };
 
         this.recipes.sort((a, b) => {
@@ -126,24 +219,11 @@ export class FactorioPartsComponent implements OnInit {
         });
 
         this.populateParts();
-
-        if (this._routeParams.params['part'] && this._routeParams.params['amount']) {
-          this.selectedPart = this._routeParams.params['part'];
-          this.amount = parseInt(this._routeParams.params['amount'], 10);
-          this.updateBuild();
-        } else {
-          this.currentPart = this.recipes[0];
-          this.selectedPart = this.currentPart.name;
-        }
+        this.initFromRoute();
       });
   }
 
   ngOnInit() {
     this.loadRecipes();
-  }
-
-  ngOnChanges() {
-    console.log('OnChanges');
-    console.log(arguments);
   }
 }

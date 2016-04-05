@@ -1,3 +1,76 @@
+
+export function recipeFactory(data: any): Recipe {
+  return {
+    name: data.name,
+    category: data.category,
+    time: data.energy_required,
+    ingredients: parseIngredientsFromJson(data),
+    results: parseResultsFromJson(data)
+  };
+};
+
+export function parseIngredientsFromJson(data: any): Ingredient[] {
+  let ingredients = [];
+
+  for (let ingredient of data.ingredients) {
+    if (! ingredient.hasOwnProperty('name')) {
+      ingredients.push({
+        name: ingredient[0],
+        type: 'item', // TODO: Can be anything, should probably be determined from category which is often not there..
+        amount: ingredient[1],
+      });
+    } else {
+      ingredients.push(ingredient);
+    }
+  }
+
+  return ingredients;
+};
+
+export function parseResultsFromJson(data: any): RecipeResult[] {
+  let results = [];
+
+  if (data.results !== undefined) {
+    results = data.results;
+  }
+
+  if (data.result !== undefined) {
+    results.push({
+      type: 'item',
+      name: data.result,
+      amount: data.result_count || 1
+    });
+  }
+
+  return results;
+}
+
+export interface Recipe {
+  name: string;
+  category: Category;
+  time: number,
+  ingredients: Ingredient[],
+  results: RecipeResult[]
+}
+
+export type Category = "item" | "chemistry";
+export type Type = "item" | "fluid";
+export type RecipeType = "crafting" | "chemistry";
+export type OilProcessingType = "basic" | "advanced";
+
+export interface RecipeResult {
+  type: Type;
+  name: string;
+  amount: number;
+}
+
+export interface Ingredient {
+  type: Type;
+  name: string;
+  amount: number;
+}
+
+/*
 export class Recipe {
 
   constructor(
@@ -103,3 +176,4 @@ enum IngredientType {
   Normal,
   Fluid
 }
+*/
