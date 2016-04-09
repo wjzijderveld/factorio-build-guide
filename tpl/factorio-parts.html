@@ -1,8 +1,8 @@
 <div class="form form-inline">
 
   <ul class="nav nav-pills">
-    <li [ngClass]="{ active: recipeType == 'crafting' }"><a [routerLink]="['FactorioParts', {'type': 'crafting', 'amount': amount, 'result': currentResultName}]">Crafting</a></li>
-    <li [ngClass]="{ active: recipeType == 'chemistry' }"><a [routerLink]="['FactorioParts', {'type': 'chemistry', 'amount': amount, 'result': currentResultName}]">Chemistry</a></li>
+    <li [ngClass]="{ active: recipeType == 'crafting' }"><a [routerLink]="['ItemResult', {'type': 'crafting', 'amount': amount, 'result': currentResultName}]">Crafting</a></li>
+    <li [ngClass]="{ active: recipeType == 'chemistry' }"><a [routerLink]="['ItemResult', {'type': 'chemistry', 'amount': amount, 'result': currentResultName}]">Chemistry</a></li>
   </ul>
 
   <div template="ngIf:recipeType == 'crafting'">
@@ -43,8 +43,8 @@
 
             <ul class="nav nav-pills nav-stacked">
               <li role="presentation" template="ngFor:#ingredient of currentRecipe.ingredients">
-                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'crafting')" [routerLink]="['FactorioParts', { 'type': 'crafting', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Crafting</span></a>
-                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'chemistry')" [routerLink]="['FactorioParts', { 'type': 'chemistry', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Chemistry</span></a>
+                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'crafting')" [routerLink]="['ItemResult', { 'type': 'crafting', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Crafting</span></a>
+                <a template="ngIf: ingredientHasRecipeOfType(ingredient, 'chemistry')" [routerLink]="['FluidResult', { 'type': 'chemistry', 'amount': ingredient.amount * assemblerCount, 'result': ingredient.name, 'oilProcessing': 'basic' }]">{{ ingredient.amount * assemblerCount }} {{ ingredient.name }}<span class="badge">Chemistry</span></a>
               </li>
             </ul>
           </div>
@@ -66,7 +66,16 @@
     </select>
     oil processing per minute.
 
+    <div class="row" template="ngIf: chemistryPlan">
 
+      <div class="col-xs-12">
+        <p>You need {{ refineries }} refineries with {{ oilInput }} crude oil<span template="ngIf: oilProcessingType == 'advanced'"> and {{ waterInput }} water</span>, with {{ chemistryPlan.layout.chemplants.length }} chemistry plants and will produce {{ chemistryPlan.output }} {{ currentResultName }} a minute.</p>
+      </div>
+
+      <div template="ngFor: #type of chemistryPlan.layout.getTypes()">
+        {{ type }}: {{ chemistryPlan.layout.getGrouped()[type].length }}
+      </div>
+    </div>
   </div>
  
   

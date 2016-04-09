@@ -34,8 +34,9 @@ System.register(['angular2/core', 'angular2/router', './factorio-parts'], functi
                         templateUrl: 'tpl/main.html'
                     }),
                     router_1.RouteConfig([
-                        //  { path: '/', redirectTo: ['FactorioParts', { result: 'rocket-fuel', amount: 100, type: 'item' }] },
-                        { path: '/:type/:result/:amount', name: 'FactorioParts', component: factorio_parts_1.FactorioPartsComponent }
+                        { path: '/', redirectTo: ['ItemResult', { result: 'electronic-circuit', amount: 100, type: 'crafting' }] },
+                        { path: '/:type/:result/:amount', component: factorio_parts_1.FactorioPartsComponent, as: 'ItemResult' },
+                        { path: '/:type/:result/:amount/:oilProcessing', component: factorio_parts_1.FactorioPartsComponent, as: 'FluidResult' }
                     ]), 
                     __metadata('design:paramtypes', [])
                 ], AppComponent);

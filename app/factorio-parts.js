@@ -11,7 +11,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
         if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
     };
     var core_1, common_1, http_1, router_1, recipe_1;
-    var BasicOilOutput, AdvancedOilOutput, FactorioPartsComponent;
+    var BasicOilOutput, AdvancedOilOutput, ChemistryLayout, FactorioPartsComponent;
     return {
         setters:[
             function (core_1_1) {
@@ -30,16 +30,57 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                 recipe_1 = recipe_1_1;
             }],
         execute: function() {
-            BasicOilOutput = {
-                'petroleum-gas': 4 * 12,
-                'light-oil': 3 * 12,
-                'heavy-oil': 3 * 12
-            };
-            AdvancedOilOutput = {
-                'petroleum-gas': 5.5 * 12,
-                'light-oil': 4.5 * 12,
-                'heavy-oil': 1 * 12
-            };
+            BasicOilOutput = (function () {
+                function BasicOilOutput(refineries) {
+                    if (refineries === void 0) { refineries = 1; }
+                    this.refineries = refineries;
+                    this['petroleum-gas'] = 4 * 12 * this.refineries;
+                    this['light-oil'] = 3 * 12 * this.refineries;
+                    this['heavy-oil'] = 3 * 12 * this.refineries;
+                }
+                BasicOilOutput.prototype.forRefineries = function (x) {
+                    return new BasicOilOutput(x);
+                };
+                return BasicOilOutput;
+            }());
+            AdvancedOilOutput = (function () {
+                function AdvancedOilOutput(refineries) {
+                    if (refineries === void 0) { refineries = 1; }
+                    this.refineries = refineries;
+                    this['petroleum-gas'] = 5.5 * 12 * this.refineries;
+                    this['light-oil'] = 4.5 * 12 * this.refineries;
+                    this['heavy-oil'] = 1 * 12 * this.refineries;
+                }
+                AdvancedOilOutput.prototype.forRefineries = function (x) {
+                    return new AdvancedOilOutput(x);
+                };
+                return AdvancedOilOutput;
+            }());
+            ChemistryLayout = (function () {
+                function ChemistryLayout(refineries, chemplants) {
+                    this.refineries = refineries;
+                    this.chemplants = chemplants;
+                    console.log(this.getTypes());
+                }
+                ChemistryLayout.prototype.getTypes = function () {
+                    return this.chemplants.reduce(function (unique, chemplant) {
+                        if (unique.indexOf(chemplant.recipe.name) == -1) {
+                            unique.push(chemplant.recipe.name);
+                        }
+                        return unique;
+                    }, []);
+                };
+                ChemistryLayout.prototype.getGrouped = function () {
+                    return this.chemplants.reduce(function (grouped, chemplant) {
+                        if (undefined == grouped[chemplant.recipe.name]) {
+                            grouped[chemplant.recipe.name] = [];
+                        }
+                        grouped[chemplant.recipe.name].push(chemplant);
+                        return grouped;
+                    }, {});
+                };
+                return ChemistryLayout;
+            }());
             FactorioPartsComponent = (function () {
                 function FactorioPartsComponent(http, _router, _routeParams) {
                     this.http = http;
@@ -51,9 +92,8 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                     this.assemblerCount = 1;
                     this.assemblingSpeed = 0.75;
                     this.refineries = 1;
-                    this.chemistryPlants = 1;
                     this.oilProcessingType = 'basic';
-                    this.oilOutput = BasicOilOutput;
+                    this.oilOutput = new BasicOilOutput();
                     this.possibleRecipes = [];
                 }
                 FactorioPartsComponent.prototype.recalculate = function () {
@@ -69,8 +109,9 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                     }
                 };
                 FactorioPartsComponent.prototype.recalculateChemistry = function () {
-                    var _this = this;
-                    this.oilOutput = this.oilProcessingType == 'basic' ? BasicOilOutput : AdvancedOilOutput;
+                    this.oilOutput = this.oilProcessingType == 'basic' ? new BasicOilOutput() : new AdvancedOilOutput();
+                    this.oilInput = 10 * 20;
+                    this.waterInput = this.oilProcessingType == 'basic' ? 0 : 5 * 20;
                     this.refineries = 1;
                     var output = 0;
                     var input = {
@@ -78,18 +119,96 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                         'light-oil': 0,
                         'heavy-oil': 0
                     };
-                    do {
-                        for (var _i = 0, _a = this.possibleRecipes; _i < _a.length; _i++) {
-                            var recipe = _a[_i];
-                            var max = 0;
-                            for (var _b = 0, _c = recipe.ingredients; _b < _c.length; _b++) {
-                                var ingredient = _c[_b];
-                                input[ingredient.name] = ingredient.amount * 20;
-                            }
-                            output = output + (recipe.results.filter(function (r) { return r.name == _this.currentResultName; }).map(function (r) { return r.amount; }).reduce(function (p, c) { return p + c; }) * 20);
+                    var needMore = true;
+                    var plan;
+                    var iteration = 0;
+                    while (needMore) {
+                        iteration++;
+                        plan = this.getChemistryBuildPlan(this.possibleRecipes, this.refineries);
+                        if (plan.output >= this.amount) {
+                            needMore = false;
+                            break;
                         }
-                        console.log(this.possibleRecipes, input, output);
-                    } while (false);
+                        if (iteration >= 10) {
+                            console.error('Infinit recursion is not nice');
+                            break;
+                        }
+                        this.refineries++;
+                        this.oilInput = (10 * 20) * this.refineries;
+                        if (this.oilProcessingType == 'advanced') {
+                            this.waterInput = (5 * 20) * this.refineries;
+                        }
+                    }
+                    this.chemistryPlan = plan;
+                };
+                FactorioPartsComponent.prototype.getChemistryBuildPlan = function (recipes, refineries) {
+                    var _this = this;
+                    var output = 0;
+                    var oilOutput = this.oilOutput.forRefineries(refineries);
+                    var chemplants = [];
+                    var rawProducts = ['heavy-oil', 'light-oil', 'petroleum-gas'];
+                    var rawProduct = function (name) { return rawProducts.indexOf(name) >= 0; };
+                    var leftOvers = {};
+                    if (rawProduct(this.currentResultName)) {
+                        output += oilOutput[this.currentResultName];
+                        oilOutput[this.currentResultName] = 0;
+                    }
+                    for (var _i = 0, rawProducts_1 = rawProducts; _i < rawProducts_1.length; _i++) {
+                        var product = rawProducts_1[_i];
+                        if (!oilOutput[product]) {
+                            break;
+                        }
+                        var recipe = void 0;
+                        if (product == 'heavy-oil') {
+                            recipe = this.recipes.filter((function (r) { return r.name === 'heavy-oil-cracking'; }))[0];
+                        }
+                        else {
+                            var found = false;
+                            for (var _a = 0, recipes_1 = recipes; _a < recipes_1.length; _a++) {
+                                var r = recipes_1[_a];
+                                for (var _b = 0, _c = r.ingredients; _b < _c.length; _b++) {
+                                    var i = _c[_b];
+                                    if (i.name == product) {
+                                        recipe = r;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (found) {
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                console.error('Could not find ' + product + ' in recipes');
+                                leftOvers[product] = oilOutput[product];
+                                oilOutput[product] = 0;
+                            }
+                        }
+                        var _loop_1 = function() {
+                            var perMinute = Math.floor(60 / recipe.time);
+                            chemplants.push({ recipe: recipe });
+                            for (var _d = 0, _e = recipe.ingredients; _d < _e.length; _d++) {
+                                var i = _e[_d];
+                                if (i.name == product) {
+                                    oilOutput[product] -= i.amount * perMinute;
+                                }
+                            }
+                            recipe.results.filter(function (r) { return rawProduct(r.name); }).forEach(function (r) {
+                                oilOutput[r.name] += r.amount * perMinute;
+                            });
+                            recipe.results.filter(function (r) { return r.name == _this.currentResultName; }).forEach(function (r) {
+                                output += r.amount * perMinute;
+                            });
+                        };
+                        while (oilOutput[product] > 0) {
+                            _loop_1();
+                        }
+                    }
+                    return {
+                        output: output,
+                        leftOvers: leftOvers,
+                        layout: new ChemistryLayout(refineries, chemplants)
+                    };
                 };
                 FactorioPartsComponent.prototype.changeResult = function (resultName) {
                     this.currentResult = this.getResult(resultName);
@@ -106,6 +225,9 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                     this.amount = parseInt(this._routeParams.params['amount'] || '1', 10);
                     this.recipeType = this._routeParams.params['type'] || 'crafting';
                     this.currentResultName = this._routeParams.params['result'] || 'electronic-circuit';
+                    if (this.recipeType == 'chemistry') {
+                        this.oilProcessingType = this._routeParams.params['oilProcessing'] || 'basic';
+                    }
                     this.currentResult = this.getResult(this.currentResultName);
                     this.recalculate();
                 };
@@ -121,7 +243,7 @@ System.register(['angular2/core', 'angular2/common', 'angular2/http', 'angular2/
                 };
                 FactorioPartsComponent.prototype.getRecipesForResult = function (resultName, category) {
                     return this.recipes.filter(function (recipe) {
-                        if (category && recipe.category !== category) {
+                        if (category && recipe.category && recipe.category.indexOf(category) == -1) {
                             return false;
                         }
                         for (var _i = 0, _a = recipe.results; _i < _a.length; _i++) {

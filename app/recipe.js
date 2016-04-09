@@ -4,8 +4,8 @@ System.register([], function(exports_1, context_1) {
     function recipeFactory(data) {
         return {
             name: data.name,
-            category: data.category,
-            time: data.energy_required,
+            category: data.category || 'crafting',
+            time: data.energy_required || 0.5,
             ingredients: parseIngredientsFromJson(data),
             results: parseResultsFromJson(data)
         };

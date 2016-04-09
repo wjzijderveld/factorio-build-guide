@@ -9,18 +9,70 @@ interface OilOutput {
   'petroleum-gas': number;
   'light-oil': number;
   'heavy-oil': number;
+
+  forRefineries(x: number): OilOutput;
 }
 
-let BasicOilOutput = {
-  'petroleum-gas': 4 * 12,
-  'light-oil': 3 * 12,
-  'heavy-oil': 3 * 12
+class BasicOilOutput {
+  public 'petroleum-gas' = 4 * 12 * this.refineries;
+  public 'light-oil' = 3 * 12 * this.refineries;
+  public 'heavy-oil' = 3 * 12 * this.refineries;
+
+  constructor(private refineries: number = 1) {}
+
+  forRefineries(x: number): BasicOilOutput {
+    return new BasicOilOutput(x);
+  }
 }
 
-let AdvancedOilOutput = {
-  'petroleum-gas': 5.5 * 12,
-  'light-oil': 4.5 * 12,
-  'heavy-oil': 1 * 12
+class AdvancedOilOutput {
+  public 'petroleum-gas' = 5.5 * 12 * this.refineries;
+  public 'light-oil' = 4.5 * 12 * this.refineries;
+  public 'heavy-oil' = 1 * 12 * this.refineries;
+  
+  constructor(private refineries: number = 1) {}
+  
+  forRefineries(x: number): AdvancedOilOutput {
+    return new AdvancedOilOutput(x);
+  }
+}
+
+interface ChemistryPlan {
+  output: number,
+  leftOvers: any,
+  layout: ChemistryLayout
+}
+
+class ChemistryLayout {
+  constructor(public refineries: number, public chemplants: Chemplant[]) {
+    console.log(this.getTypes());
+  }
+
+  getTypes(): string[] {
+    return this.chemplants.reduce((unique, chemplant) => {
+      if (unique.indexOf(chemplant.recipe.name) == -1) {
+        unique.push(chemplant.recipe.name);
+      }
+
+      return unique;
+    }, []);
+  }
+
+  getGrouped(): any {
+    return this.chemplants.reduce((grouped, chemplant) => {
+      if (undefined == grouped[chemplant.recipe.name]) {
+        grouped[chemplant.recipe.name] = [];
+      }
+
+      grouped[chemplant.recipe.name].push(chemplant);
+
+      return grouped;
+    }, {});
+  }
+}
+
+interface Chemplant {
+  recipe: Recipe
 }
 
 @Component({
@@ -43,9 +95,11 @@ export class FactorioPartsComponent implements OnInit {
   assemblingSpeed = 0.75;
 
   refineries = 1;
-  chemistryPlants = 1;
+  chemistryPlan: ChemistryPlan;
   oilProcessingType: OilProcessingType = 'basic';
-  oilOutput: OilOutput = BasicOilOutput;
+  oilOutput: OilOutput = new BasicOilOutput();
+  oilInput: number;
+  waterInput: number;
 
   currentResult: RecipeResult;
   currentRecipe: Recipe;
@@ -71,33 +125,120 @@ export class FactorioPartsComponent implements OnInit {
   }
 
   private recalculateChemistry() {
-    this.oilOutput = this.oilProcessingType == 'basic' ? BasicOilOutput : AdvancedOilOutput;
+    this.oilOutput = this.oilProcessingType == 'basic' ? new BasicOilOutput() : new AdvancedOilOutput();
+    this.oilInput = 10 * 20;
+    this.waterInput = this.oilProcessingType == 'basic' ? 0 : 5 * 20;
 
     this.refineries = 1;
    
     var output = 0;
-    var input: OilOutput = {
+    var input = {
       'petroleum-gas': 0,
       'light-oil': 0,
       'heavy-oil': 0
     };
 
-    do {
+    let needMore = true;
+    let plan: ChemistryPlan;
+    let iteration = 0;
+    while (needMore) {
+      iteration++;
+      plan = this.getChemistryBuildPlan(this.possibleRecipes, this.refineries);
 
-      for (let recipe of this.possibleRecipes) {
-        var max = 0;
-        for (let ingredient of recipe.ingredients) {
-          input[ingredient.name] = ingredient.amount * 20;
-        }
-
-        output = output + (recipe.results.filter(r => r.name == this.currentResultName).map(r => r.amount).reduce((p,c) => p+c) * 20);
+      if (plan.output >= this.amount) {
+        needMore = false;
+        break;
       }
 
-      console.log(this.possibleRecipes, input, output);
+      if (iteration >= 10) {
+        console.error('Infinit recursion is not nice');
+        break;
+      }
 
-    } while (false);
+      this.refineries++;
+      this.oilInput = (10 * 20) * this.refineries;
+      if (this.oilProcessingType == 'advanced') {
+        this.waterInput = (5 * 20) * this.refineries;
+      }
+    }
+
+    this.chemistryPlan = plan;
   }
 
+  private getChemistryBuildPlan(recipes: Recipe[], refineries: number): ChemistryPlan {
+
+    let output = 0;
+    let oilOutput = this.oilOutput.forRefineries(refineries);
+    let chemplants: Chemplant[] = [];
+    let rawProducts = ['heavy-oil', 'light-oil', 'petroleum-gas'];
+    let rawProduct = (name: string) => { return rawProducts.indexOf(name) >= 0; }
+    let leftOvers: any = {};
+
+    if (rawProduct(this.currentResultName)) {
+      output += oilOutput[this.currentResultName];
+      oilOutput[this.currentResultName] = 0;
+    }
+
+    for (let product of rawProducts) {
+      if (! oilOutput[product]) {
+        break;
+      }
+      
+      let recipe;
+      if (product == 'heavy-oil') {
+        recipe = this.recipes.filter((r => { return r.name === 'heavy-oil-cracking'; }))[0];
+      } else {
+        let found = false
+        for (let r of recipes) {
+          for (let i of r.ingredients) {
+            if (i.name == product) {
+              recipe = r;
+              found = true;
+              break;
+            }
+          }
+
+          if (found) {
+            break;
+          }
+        }
+
+        if (!found) {
+          console.error('Could not find ' + product + ' in recipes');
+          leftOvers[product] = oilOutput[product];
+          oilOutput[product] = 0;
+        }
+      }
+
+      while (oilOutput[product] > 0) {
+
+        let perMinute = Math.floor(60 / recipe.time);
+
+        chemplants.push({ recipe: recipe });
+
+        for (let i of recipe.ingredients) {
+          if (i.name == product) {
+            oilOutput[product] -= i.amount * perMinute;
+          }
+        }
+
+        recipe.results.filter((r) => rawProduct(r.name) ).forEach((r) => {
+          oilOutput[r.name] += r.amount * perMinute;
+        });
+
+        recipe.results.filter((r) => r.name == this.currentResultName ).forEach((r) => {
+          output += r.amount * perMinute;
+        });
+      }
+    }
+
+    return {
+      output: output,
+      leftOvers: leftOvers,
+      layout: new ChemistryLayout(refineries, chemplants)
+    }
+  }
+  
   changeResult(resultName: string): void {
     this.currentResult = this.getResult(resultName);
 
@@ -117,6 +258,11 @@ export class FactorioPartsComponent implements OnInit {
     this.amount = parseInt(this._routeParams.params['amount'] || '1', 10);
     this.recipeType = <RecipeType> this._routeParams.params['type'] || 'crafting';
     this.currentResultName = this._routeParams.params['result'] || 'electronic-circuit';
+
+    if (this.recipeType == 'chemistry') {
+      this.oilProcessingType = <OilProcessingType> this._routeParams.params['oilProcessing'] || 'basic';
+    }
+
     this.currentResult = this.getResult(this.currentResultName);
 
     this.recalculate();
@@ -137,7 +283,7 @@ export class FactorioPartsComponent implements OnInit {
 
   private getRecipesForResult(resultName: string, category?: RecipeType) {
     return this.recipes.filter((recipe: Recipe) => {
-      if (category && recipe.category !== category) {
+      if (category && recipe.category && recipe.category.indexOf(category) == -1) {
         return false;
       }
 
@@ -149,6 +295,7 @@ export class FactorioPartsComponent implements OnInit {
 
       return false;
     });
+
   }
 
   hasRecipe(ingredient: Ingredient) {

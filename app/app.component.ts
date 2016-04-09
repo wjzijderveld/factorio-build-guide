@@ -10,8 +10,9 @@ import {FactorioPartsComponent} from './factorio-parts'
 })
 
 @RouteConfig([
-//  { path: '/', redirectTo: ['FactorioParts', { result: 'rocket-fuel', amount: 100, type: 'item' }] },
-  { path: '/:type/:result/:amount', name: 'FactorioParts', component: FactorioPartsComponent }
+  { path: '/', redirectTo: ['ItemResult', { result: 'electronic-circuit', amount: 100, type: 'crafting' }] },
+  { path: '/:type/:result/:amount', component: FactorioPartsComponent, as: 'ItemResult' },
+  { path: '/:type/:result/:amount/:oilProcessing', component: FactorioPartsComponent, as: 'FluidResult' }
 ])
 
 export class AppComponent {
